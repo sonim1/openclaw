@@ -57,6 +57,7 @@ import {
   extractTelegramLocation,
   hasBotMention,
   resolveTelegramThreadSpec,
+  withChannelChatIdAllowEntry,
 } from "./bot/helpers.js";
 import type { StickerMetadata, TelegramContext } from "./bot/types.js";
 import { enforceTelegramDmAccess } from "./dm-access.js";
@@ -196,9 +197,19 @@ export const buildTelegramMessageContext = async ({
   const sessionKey = threadKeys?.sessionKey ?? baseSessionKey;
   const mentionRegexes = buildMentionRegexes(cfg, route.agentId);
   const effectiveDmAllow = normalizeDmAllowFromWithStore({ allowFrom, storeAllowFrom, dmPolicy });
+  const originChatType = (msg as { __openclawOriginChatType?: (typeof msg.chat)["type"] })
+    .__openclawOriginChatType;
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
+  const normalizedGroupAllow = normalizeAllowFrom(groupAllowOverride ?? groupAllowFrom);
   // Group sender checks are explicit and must not inherit DM pairing-store entries.
-  const effectiveGroupAllow = normalizeAllowFrom(groupAllowOverride ?? groupAllowFrom);
+  const effectiveGroupAllow =
+    typeof groupAllowOverride === "undefined"
+      ? withChannelChatIdAllowEntry({
+          allow: normalizedGroupAllow,
+          chatId,
+          chatType: originChatType ?? msg.chat.type,
+        })
+      : normalizedGroupAllow;
   const hasGroupAllowOverride = typeof groupAllowOverride !== "undefined";
   const senderId = msg.from?.id ? String(msg.from.id) : "";
   const senderUsername = msg.from?.username ?? "";

@@ -8,6 +8,25 @@ import type { TelegramStreamMode } from "./types.js";
 
 const TELEGRAM_GENERAL_TOPIC_ID = 1;
 
+export function withChannelChatIdAllowEntry(params: {
+  allow: NormalizedAllowFrom;
+  chatId: string | number;
+  chatType?: Chat["type"];
+}): NormalizedAllowFrom {
+  if (params.chatType !== "channel") {
+    return params.allow;
+  }
+  const channelId = String(params.chatId).trim();
+  if (!channelId || params.allow.entries.includes(channelId)) {
+    return params.allow;
+  }
+  return {
+    ...params.allow,
+    entries: [...params.allow.entries, channelId],
+    hasEntries: true,
+  };
+}
+
 export type TelegramThreadSpec = {
   id?: number;
   scope: "dm" | "forum" | "none";
@@ -15,6 +34,7 @@ export type TelegramThreadSpec = {
 
 export async function resolveTelegramGroupAllowFromContext(params: {
   chatId: string | number;
+  chatType?: Chat["type"];
   accountId?: string;
   isForum?: boolean;
   messageThreadId?: number | null;
@@ -46,9 +66,17 @@ export async function resolveTelegramGroupAllowFromContext(params: {
     resolvedThreadId,
   );
   const groupAllowOverride = firstDefined(topicConfig?.allowFrom, groupConfig?.allowFrom);
+  const normalizedGroupAllow = normalizeAllowFrom(groupAllowOverride ?? params.groupAllowFrom);
   // Group sender access must remain explicit (groupAllowFrom/per-group allowFrom only).
   // DM pairing store entries are not a group authorization source.
-  const effectiveGroupAllow = normalizeAllowFrom(groupAllowOverride ?? params.groupAllowFrom);
+  const effectiveGroupAllow =
+    typeof groupAllowOverride === "undefined"
+      ? withChannelChatIdAllowEntry({
+          allow: normalizedGroupAllow,
+          chatId: params.chatId,
+          chatType: params.chatType,
+        })
+      : normalizedGroupAllow;
   const hasGroupAllowOverride = typeof groupAllowOverride !== "undefined";
   return {
     resolvedThreadId,

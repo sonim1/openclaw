@@ -306,7 +306,7 @@ describe("registerTelegramNativeCommands", () => {
       },
     };
 
-    it("rejects auth-required native commands from channel_post when channel is not explicitly allowed", async () => {
+    it("authorizes auth-required native commands from channel_post by default", async () => {
       const { commandHandlers, sendMessage, bot } = buildChannelPostBot();
       registerTelegramNativeCommands({
         ...buildParams({}),
@@ -317,8 +317,8 @@ describe("registerTelegramNativeCommands", () => {
       expect(handler).toBeTruthy();
 
       await handler?.(channelPostCtx);
-      expect(sendMessage).toHaveBeenCalledWith(
-        -1001234567890,
+      expect(sendMessage).not.toHaveBeenCalledWith(
+        expect.anything(),
         "You are not authorized to use this command.",
       );
     });

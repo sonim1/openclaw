@@ -546,6 +546,7 @@ export const registerTelegramHandlers = ({
 
   const resolveTelegramEventAuthorizationContext = async (params: {
     chatId: number;
+    chatType?: Message["chat"]["type"];
     isForum: boolean;
     messageThreadId?: number;
     groupAllowContext?: TelegramGroupAllowContext;
@@ -555,6 +556,7 @@ export const registerTelegramHandlers = ({
       params.groupAllowContext ??
       (await resolveTelegramGroupAllowFromContext({
         chatId: params.chatId,
+        chatType: params.chatType,
         accountId,
         isForum: params.isForum,
         messageThreadId: params.messageThreadId,
@@ -667,6 +669,7 @@ export const registerTelegramHandlers = ({
       }
       const eventAuthContext = await resolveTelegramEventAuthorizationContext({
         chatId,
+        chatType: reaction.chat.type,
         isForum,
       });
       const senderAuthorization = authorizeTelegramEventSender({
@@ -1003,6 +1006,7 @@ export const registerTelegramHandlers = ({
       const isForum = callbackMessage.chat.is_forum === true;
       const eventAuthContext = await resolveTelegramEventAuthorizationContext({
         chatId,
+        chatType: callbackMessage.chat.type,
         isForum,
         messageThreadId,
       });
@@ -1243,6 +1247,7 @@ export const registerTelegramHandlers = ({
     ctx: TelegramContext;
     msg: Message;
     chatId: number;
+    chatType: Message["chat"]["type"];
     isGroup: boolean;
     isForum: boolean;
     messageThreadId?: number;
@@ -1261,6 +1266,7 @@ export const registerTelegramHandlers = ({
       }
       const eventAuthContext = await resolveTelegramEventAuthorizationContext({
         chatId: event.chatId,
+        chatType: event.chatType,
         isForum: event.isForum,
         messageThreadId: event.messageThreadId,
       });
@@ -1341,6 +1347,7 @@ export const registerTelegramHandlers = ({
       ctx: buildSyntheticContext(ctx, msg),
       msg,
       chatId: msg.chat.id,
+      chatType: msg.chat.type,
       isGroup: msg.chat.type === "group" || msg.chat.type === "supergroup",
       isForum: msg.chat.is_forum === true,
       messageThreadId: msg.message_thread_id,
@@ -1379,6 +1386,7 @@ export const registerTelegramHandlers = ({
     const syntheticMsg: Message = {
       ...post,
       from: post.from ?? syntheticFrom,
+      __openclawOriginChatType: post.chat.type,
       chat: {
         ...post.chat,
         type: "supergroup" as const,
@@ -1390,6 +1398,7 @@ export const registerTelegramHandlers = ({
       ctx: buildSyntheticContext(ctx, syntheticMsg),
       msg: syntheticMsg,
       chatId,
+      chatType: post.chat.type,
       isGroup: true,
       isForum: false,
       senderId:

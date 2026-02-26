@@ -170,6 +170,7 @@ async function resolveTelegramCommandAuth(params: {
   const isForum = (msg.chat as { is_forum?: boolean }).is_forum === true;
   const groupAllowContext = await resolveTelegramGroupAllowFromContext({
     chatId,
+    chatType: msg.chat.type,
     accountId,
     isForum,
     messageThreadId,

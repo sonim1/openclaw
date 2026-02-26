@@ -1896,6 +1896,43 @@ describe("createTelegramBot", () => {
     expect(sendMessageSpy).toHaveBeenCalledTimes(1);
     expect(sendMessageSpy.mock.calls[0]?.[1]).toContain("final reply");
   });
+  it("authorizes channel_post under allowlist policy by auto-allowing the channel id", async () => {
+    resetHarnessSpies();
+    loadConfig.mockReturnValue({
+      channels: {
+        telegram: {
+          groupPolicy: "allowlist",
+          groups: {
+            "-100777111222": {
+              enabled: true,
+              requireMention: false,
+            },
+          },
+        },
+      },
+    });
+
+    createTelegramBot({ token: "tok" });
+    const handler = getOnHandler("channel_post") as (ctx: Record<string, unknown>) => Promise<void>;
+
+    await handler({
+      channelPost: {
+        chat: { id: -100777111222, type: "channel", title: "Wake Channel" },
+        sender_chat: {
+          id: -100777111222,
+          type: "channel",
+          title: "Wake Channel",
+        },
+        message_id: 111,
+        date: 1736380800,
+        text: "channel ping",
+      },
+      me: { username: "openclaw_bot" },
+      getFile: async () => ({}),
+    });
+
+    expect(replySpy).toHaveBeenCalledTimes(1);
+  });
   it("buffers channel_post media groups and processes them together", async () => {
     loadConfig.mockReturnValue({
       channels: {
